@@ -2,10 +2,12 @@ const {Users} = require('../models/users');
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-// get Users
+
+// get Users tanpa menampilkan password
 router.get(`/`, async (req, res)=> {
-    const userList = await Users.find(); 
+    const userList = await Users.find().select('-password');
     
     if (!userList){
         res.status(500).json({success: false})
@@ -13,9 +15,9 @@ router.get(`/`, async (req, res)=> {
     res.send(userList); 
 })
 
-// get User by id 
+// get User by id tanpa menampilkan password
 router.get(`/:id`, async (req, res)=> {
-    const user = await Users.findById(req.params.id); 
+    const user = await Users.findById(req.params.id).select('-password'); 
     
     if (!user){
         res.status(500).json({success: false})
@@ -43,7 +45,6 @@ router.post(`/`, async (req, res)=> {
 
     res.send(user);
 })
-
 
 
 router.put(`/:id`, async(req, res)=> {
@@ -83,6 +84,32 @@ router.delete(`/:id`, (req, res)=> {
 
 })
 
+router.post(`/login`, async (req, res)=> {
+    const user = await Users.findOne({email: req.body.email})
+    const secret = process.env.secret;
+
+    // cek email 
+    if(!user) {
+        return res.status(400).send('The user not found');
+    }
+    // cek password
+    if(user && bcrypt.compareSync(req.body.password, user.password)){
+        const token = jwt.sign(
+            {
+                userId: user.id
+            }, 
+            secret,
+            {
+                //expire 1 hari
+                expiresIn : '1d'
+            }
+        )
+
+        res.status(200).send({user: user.email, token: token})
+    }else{
+        res.status(400).send('password wrong!');
+    }
+})
 
 
 // export module api Users 

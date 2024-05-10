@@ -25,7 +25,7 @@ router.get(`/:id`, async (req, res)=> {
 
 // post products
 router.post(`/`, async (req, res)=> {
-    const product = new Product({
+    let product = new Product({
         name: req.body.name,
         description: req.body.description,
         price: req.body.price,
